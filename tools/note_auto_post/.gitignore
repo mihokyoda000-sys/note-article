@@ -1,0 +1,4 @@
+.browser-profile/
+note_cookies.json
+*.json.bak
+node_modules/

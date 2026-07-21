@@ -1,0 +1,13 @@
+{
+  "name": "note-auto-post",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fill a note.com draft (title + body) automatically from a markdown file using a real logged-in browser session.",
+  "main": "post.js",
+  "scripts": {
+    "post": "node post.js"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0"
+  }
+}
