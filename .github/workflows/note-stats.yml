@@ -38,7 +38,9 @@ jobs:
         run: python tools/note_stats/fetch_stats.py
 
       - name: グラフを生成
-        run: python tools/note_stats/make_graph.py
+        run: |
+          python tools/note_stats/make_graph.py
+          python tools/note_stats/make_articles_graph.py
 
       - name: コミットしてプッシュ
         run: |

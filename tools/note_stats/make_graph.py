@@ -12,41 +12,25 @@ import csv
 from datetime import datetime, date as date_type, timedelta, timezone
 from pathlib import Path
 
-JST = timezone(timedelta(hours=9))
-
-import matplotlib
-
-matplotlib.use("Agg")
-
-# 日本語フォント(CI では matplotlib-fontja を入れる)。無ければ英語表記に切り替える。
-try:
-    import matplotlib_fontja  # noqa: F401
-
-    HAS_JP_FONT = True
-except ImportError:
-    try:
-        import japanize_matplotlib  # noqa: F401
-
-        HAS_JP_FONT = True
-    except ImportError:
-        HAS_JP_FONT = False
-
-import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FuncFormatter
+
+from chartstyle import (
+    BASELINE,
+    HAS_JP_FONT,
+    INK,
+    INK_2,
+    MUTED,
+    SERIES,
+    SURFACE,
+    save,
+    style_axis,
+)
+
+JST = timezone(timedelta(hours=9))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CSV_PATH = REPO_ROOT / "data" / "stats.csv"
 OUT_PATH = REPO_ROOT / "docs" / "stats.png"
-
-# カラーパレット(ライトサーフェス用に検証済みの既定値)
-SURFACE = "#fcfcfb"
-SERIES = "#2a78d6"  # 青(系列1)
-INK = "#0b0b0b"  # 主要テキスト
-INK_2 = "#52514e"  # 補助テキスト
-MUTED = "#898781"  # 軸ラベル
-GRID = "#e1e0d9"  # グリッド(ヘアライン)
-BASELINE = "#c3c2b7"  # 軸線
 
 T = {
     True: {
@@ -91,38 +75,16 @@ def load_rows() -> list[dict]:
     return rows
 
 
-def style_axis(ax) -> None:
-    ax.set_facecolor(SURFACE)
-    for side in ("top", "right", "left"):
-        ax.spines[side].set_visible(False)
-    ax.spines["bottom"].set_color(BASELINE)
-    ax.spines["bottom"].set_linewidth(1)
-    ax.grid(axis="y", color=GRID, linewidth=0.8)
-    ax.set_axisbelow(True)
-    ax.tick_params(colors=MUTED, labelsize=9, length=0)
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
-    locator = mdates.AutoDateLocator()
-    ax.xaxis.set_major_locator(locator)
-    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
-
-
 def new_figure(height: float = 6.6):
     fig = plt.figure(figsize=(10, height), facecolor=SURFACE)
     return fig
-
-
-def save(fig) -> None:
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT_PATH, dpi=160, facecolor=SURFACE, bbox_inches="tight", pad_inches=0.35)
-    plt.close(fig)
-    print(f"グラフを出力しました: {OUT_PATH}")
 
 
 def render_placeholder() -> None:
     fig = new_figure(4.2)
     fig.text(0.5, 0.62, T["title"], ha="center", fontsize=15, color=INK)
     fig.text(0.5, 0.42, T["no_data"], ha="center", va="center", fontsize=11, color=INK_2, linespacing=1.8)
-    save(fig)
+    save(fig, OUT_PATH)
 
 
 def bar_width_days(ax, dates: list[date_type]) -> float:
@@ -234,7 +196,7 @@ def render_chart(rows: list[dict]) -> None:
         color=INK_2,
     )
     fig.subplots_adjust(top=0.86, bottom=0.08, left=0.075, right=0.97)
-    save(fig)
+    save(fig, OUT_PATH)
 
 
 def main() -> None:
