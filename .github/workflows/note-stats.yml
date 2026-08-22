@@ -1,0 +1,54 @@
+# note.com のアクセス数を毎日取得してグラフを更新するワークフロー
+#
+# 事前準備: リポジトリの Settings → Secrets and variables → Actions に
+#           NOTE_COOKIE という名前で note.com のログイン Cookie を登録すること。
+#           (詳しくは README.md の「アクセス数の自動記録」を参照)
+name: note アクセス数の記録
+
+on:
+  schedule:
+    # 毎日 20:00 JST (= 11:00 UTC)。GitHub の混雑状況により数分〜数十分遅れることがある
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: note-stats
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 依存ライブラリをインストール
+        run: pip install --quiet matplotlib matplotlib-fontja
+
+      - name: アクセス数を取得
+        env:
+          NOTE_COOKIE: ${{ secrets.NOTE_COOKIE }}
+        run: python tools/note_stats/fetch_stats.py
+
+      - name: グラフを生成
+        run: python tools/note_stats/make_graph.py
+
+      - name: コミットしてプッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data docs
+          if git diff --cached --quiet; then
+            echo "変更がないためコミットしません"
+          else
+            git commit -m "stats: $(TZ=Asia/Tokyo date +%Y-%m-%d) のアクセス数を記録"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
