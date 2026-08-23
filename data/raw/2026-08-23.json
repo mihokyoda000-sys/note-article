@@ -1,0 +1,276 @@
+{
+  "fetched_at": "2026-08-23T20:10:24+09:00",
+  "last_calculate_at": "2026/8/23 20:03",
+  "note_stats": [
+    {
+      "id": 168642642,
+      "key": "nea1bf21f0c43",
+      "name": "①「えっ？えっ？社長って何をすればいいの？」から始まった私の経営者人生",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 90,
+      "like_count": 19,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 168822537,
+      "key": "n498e32b659e3",
+      "name": "②　苦しさの中で見つけた、経営者としての向き合い方",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 76,
+      "like_count": 12,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 168962262,
+      "key": "nc31b122ad128",
+      "name": "③　相談相手を見つける場所",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 36,
+      "like_count": 2,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 169119416,
+      "key": "n10f54eab00a4",
+      "name": "④　「大丈夫、なんとかなりますよ」に、泣きそうになった",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 36,
+      "like_count": 4,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 169520711,
+      "key": "n646ecec94405",
+      "name": "⑤　右腕登場！",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 31,
+      "like_count": 0,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 170081377,
+      "key": "nee8b17141e24",
+      "name": "⑨　値上げで利益は増えても、売上個数が減ると起きること",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 29,
+      "like_count": 4,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 169586353,
+      "key": "nea8bd0f29390",
+      "name": "⑥　従業員のケガや体調不良に備える、5つの公的支援と保険",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 28,
+      "like_count": 4,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 170519758,
+      "key": "nb65259523696",
+      "name": "⑩　「CSVを貼るだけ」でダッシュボードができた！　AIを部下にしてみたら社長の仕事が少しだけ変わった話",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 26,
+      "like_count": 0,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 171124421,
+      "key": "nab91def15dfe",
+      "name": "⑪　卸だけで、利益は本当に十分なのか",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 23,
+      "like_count": 4,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 169748300,
+      "key": "n49d61e4690af",
+      "name": "⑦　先払い・後払いのズレが、資金繰りを圧迫する理由",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 21,
+      "like_count": 3,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 173826432,
+      "key": "nf13d7df10829",
+      "name": "⑮　お祭り出店5年・百貨店催事5回でわかった、イベント販売のコツ",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 21,
+      "like_count": 0,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 172932567,
+      "key": "n67ff5dd85ee1",
+      "name": "⑫　資金繰りのためにファクタリングを選んだ日",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 18,
+      "like_count": 1,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 169903376,
+      "key": "n99aac0e782f4",
+      "name": "⑧　バズらなくてもうれしかった話。",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 17,
+      "like_count": 7,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 173603713,
+      "key": "nd2788158170d",
+      "name": "⑭　あなたの会社、10年後は誰が継いでいますか",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 14,
+      "like_count": 10,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 173291386,
+      "key": "nb72d8b0e34b1",
+      "name": "⑬　玄関の花、一人温泉、あてのないドライブ。経営者の心を守る3つの余白",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 11,
+      "like_count": 3,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 176114761,
+      "key": "n7464597cc1e3",
+      "name": "⑯　「美味しかったから」——台風の東京で聞けた、いちばん嬉しい一言",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 6,
+      "like_count": 1,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 168419229,
+      "key": "ne2f333367240",
+      "name": "「えっ？えっ？社長って何をすればいいの?」から始まった私の経営者人生",
+      "body": null,
+      "type": "TextNote",
+      "status": "deleted",
+      "read_count": 4,
+      "like_count": 0,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    },
+    {
+      "id": 176339703,
+      "key": "nc67c150662f2",
+      "name": "実は9割が知らない、社長の経費と節税の3つの落とし穴",
+      "body": null,
+      "type": "TextNote",
+      "status": "published",
+      "read_count": 1,
+      "like_count": 3,
+      "comment_count": 0,
+      "user": {
+        "urlname": "natty_abelia4027"
+      },
+      "custom_domain": null
+    }
+  ]
+}
