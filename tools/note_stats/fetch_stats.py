@@ -4,7 +4,9 @@
 
 https://note.com/sitesettings/stats が内部で使っている API
 (https://note.com/api/v1/stats/pv)から全期間の記事別統計を取得し、
-合計値を CSV に1日1行で追記する。同じ日に複数回実行した場合は上書きされる。
+合計値を CSV に1回の取得につき1行で追記する(6時間ごとの実行を想定)。
+同じ日の同じ時間帯(1時間単位)に再実行した場合は上書きされる。
+旧形式(date 列による1日1行)の CSV は読み込み時に自動で新形式へ移行する。
 
 必要な環境変数:
   NOTE_COOKIE ... note.com のログイン Cookie。次のいずれかの形式で指定する:
@@ -14,8 +16,8 @@ https://note.com/sitesettings/stats が内部で使っている API
     3. _note_session_v5 の値そのもの
 
 出力:
-  data/stats.csv           ... 日次サマリー(date, total_pv, total_likes, ...)
-  data/raw/YYYY-MM-DD.json ... その日に取得した記事別の生データ(将来の再集計用)
+  data/stats.csv              ... 取得ごとのサマリー(recorded_at, total_pv, ...)
+  data/raw/YYYY-MM-DDTHH.json ... その回に取得した記事別の生データ(将来の再集計用)
 """
 from __future__ import annotations
 
@@ -43,7 +45,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CSV_PATH = REPO_ROOT / "data" / "stats.csv"
 RAW_DIR = REPO_ROOT / "data" / "raw"
 CSV_FIELDS = [
-    "date",
+    "recorded_at",
     "total_pv",
     "total_likes",
     "total_comments",
@@ -156,7 +158,7 @@ def fetch_all_stats(cookie_header: str) -> dict:
 def summarize(snapshot: dict) -> dict:
     stats = snapshot["note_stats"]
     return {
-        "date": datetime.now(JST).date().isoformat(),
+        "recorded_at": datetime.now(JST).strftime("%Y-%m-%dT%H:%M"),
         "total_pv": sum(read_count_of(s) for s in stats),
         "total_likes": sum(to_int(s.get("like_count")) for s in stats),
         "total_comments": sum(to_int(s.get("comment_count")) for s in stats),
@@ -165,15 +167,29 @@ def summarize(snapshot: dict) -> dict:
     }
 
 
+def normalize_row(r: dict) -> dict | None:
+    """CSV の1行を新形式に揃える。旧形式(date 列)は 20:00 の記録とみなして移行する。"""
+    recorded_at = (r.get("recorded_at") or "").strip()
+    if not recorded_at:
+        old_date = (r.get("date") or "").strip()
+        if not old_date:
+            return None
+        recorded_at = old_date + "T20:00"  # 旧形式は毎日20時ごろの取得だった
+    row = {k: str(r.get(k, "")) for k in CSV_FIELDS}
+    row["recorded_at"] = recorded_at
+    return row
+
+
 def upsert_csv_row(row: dict) -> None:
-    """同じ日付の行があれば置き換え、なければ追記して日付順に保存する。"""
+    """同じ時間帯(1時間単位)の行があれば置き換え、なければ追記して日時順に保存する。"""
     rows: list[dict] = []
     if CSV_PATH.exists():
         with CSV_PATH.open(newline="", encoding="utf-8") as f:
-            rows = [r for r in csv.DictReader(f) if r.get("date")]
-    rows = [r for r in rows if r["date"] != row["date"]]
+            rows = [n for n in (normalize_row(r) for r in csv.DictReader(f)) if n]
+    hour_key = row["recorded_at"][:13]  # YYYY-MM-DDTHH
+    rows = [r for r in rows if r["recorded_at"][:13] != hour_key]
     rows.append({k: str(row.get(k, "")) for k in CSV_FIELDS})
-    rows.sort(key=lambda r: r["date"])
+    rows.sort(key=lambda r: r["recorded_at"])
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
     with CSV_PATH.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
@@ -198,13 +214,13 @@ def main() -> None:
     row = summarize(snapshot)
 
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    raw_path = RAW_DIR / f"{row['date']}.json"
+    raw_path = RAW_DIR / f"{row['recorded_at'][:13]}.json"
     raw_path.write_text(
         json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     upsert_csv_row(row)
 
-    print(f"記録しました: {row['date']}")
+    print(f"記録しました: {row['recorded_at']}")
     print(f"  全体ビュー : {row['total_pv']:,}")
     print(f"  スキ       : {row['total_likes']:,}")
     print(f"  コメント   : {row['total_comments']:,}")

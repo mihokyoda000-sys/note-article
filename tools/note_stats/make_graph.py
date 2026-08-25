@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 """data/stats.csv から note のアクセス数グラフ(docs/stats.png)を生成する。
 
-上段: 全体ビューの累計の推移(折れ線)
-下段: 前回取得からの増加ビュー数(棒)
+上段: 全体ビューの累計の推移(折れ線。6時間ごとの全記録)
+下段: 1日ごとの増加ビュー数(棒。その日の最後の記録どうしの差)
 データがまだ無い場合は案内メッセージだけの画像を出力する。
 """
 from __future__ import annotations
 
 import csv
-from datetime import datetime, date as date_type, timedelta, timezone
+from datetime import datetime, date as date_type, time as time_type, timedelta, timezone
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -36,24 +36,37 @@ T = {
     True: {
         "title": "note 全体ビュー(アクセス数)の推移",
         "cumulative": "累計ビュー",
-        "daily": "増加ビュー数(前回の記録との差)",
+        "daily": "1日ごとの増加ビュー数",
         "updated": "最終更新",
         "total": "累計",
         "views_unit": "ビュー",
-        "no_data": "まだデータがありません。\n毎日20時の自動実行(または手動実行)後にグラフが表示されます。",
+        "no_data": "まだデータがありません。\n6時間ごとの自動実行(または手動実行)後にグラフが表示されます。",
         "need_two": "増加数は2日分のデータが揃うと表示されます",
     },
     False: {
         "title": "note.com total views",
         "cumulative": "Cumulative views",
-        "daily": "New views since previous record",
+        "daily": "Daily increase in views",
         "updated": "Updated",
         "total": "Total",
         "views_unit": "views",
-        "no_data": "No data yet.\nThe graph will appear after the first daily run.",
+        "no_data": "No data yet.\nThe graph will appear after the first run.",
         "need_two": "Daily change appears once two days of data exist",
     },
 }[HAS_JP_FONT]
+
+
+def parse_recorded_at(r: dict) -> datetime | None:
+    value = (r.get("recorded_at") or "").strip()
+    if not value:
+        old_date = (r.get("date") or "").strip()
+        if not old_date:
+            return None
+        value = old_date + "T20:00"  # 旧形式(1日1行)は毎日20時ごろの取得だった
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
 
 
 def load_rows() -> list[dict]:
@@ -62,16 +75,14 @@ def load_rows() -> list[dict]:
     with CSV_PATH.open(newline="", encoding="utf-8") as f:
         rows = []
         for r in csv.DictReader(f):
+            when = parse_recorded_at(r)
             try:
-                rows.append(
-                    {
-                        "date": date_type.fromisoformat(r["date"]),
-                        "total_pv": int(r["total_pv"]),
-                    }
-                )
+                total_pv = int(r["total_pv"])
             except (KeyError, ValueError):
                 continue
-    rows.sort(key=lambda r: r["date"])
+            if when is not None:
+                rows.append({"when": when, "total_pv": total_pv})
+    rows.sort(key=lambda r: r["when"])
     return rows
 
 
@@ -103,9 +114,15 @@ def bar_width_days(ax, dates: list[date_type]) -> float:
 
 
 def render_chart(rows: list[dict]) -> None:
-    dates = [r["date"] for r in rows]
+    times = [r["when"] for r in rows]
     totals = [r["total_pv"] for r in rows]
-    deltas = [b - a for a, b in zip(totals, totals[1:])]
+
+    # 1日ごとの増加数 = その日の最後の記録と前日の最後の記録の差
+    last_of_day: dict[date_type, int] = {}
+    for r in rows:
+        last_of_day[r["when"].date()] = r["total_pv"]
+    days = sorted(last_of_day)
+    day_deltas = [last_of_day[b] - last_of_day[a] for a, b in zip(days, days[1:])]
 
     fig = new_figure()
     gs = fig.add_gridspec(2, 1, height_ratios=[2.0, 1.1], hspace=0.42)
@@ -115,7 +132,7 @@ def render_chart(rows: list[dict]) -> None:
     # ---- 上段: 累計ビューの折れ線 ----
     style_axis(ax1)
     ax1.plot(
-        dates,
+        times,
         totals,
         color=SERIES,
         linewidth=2,
@@ -125,7 +142,7 @@ def render_chart(rows: list[dict]) -> None:
     )
     # 終端マーカー(サーフェス色の 2px リング付き)と、終端のみ直接ラベル
     ax1.plot(
-        dates[-1],
+        times[-1],
         totals[-1],
         marker="o",
         markersize=9,
@@ -136,7 +153,7 @@ def render_chart(rows: list[dict]) -> None:
     )
     ax1.annotate(
         f"{totals[-1]:,}",
-        (dates[-1], totals[-1]),
+        (times[-1], totals[-1]),
         textcoords="offset points",
         xytext=(8, 4),
         fontsize=11.5,
@@ -145,31 +162,32 @@ def render_chart(rows: list[dict]) -> None:
     ax1.set_title(T["cumulative"], loc="left", fontsize=11, color=INK_2, pad=10)
     ax1.set_ylim(bottom=0)
     ax1.margins(x=0.04)
-    if len(dates) == 1:
+    if len(times) == 1:
         # 1点だけのときは前後3日に絞る(既定だと数年分の軸になってしまう)
-        ax1.set_xlim(dates[0] - timedelta(days=3), dates[0] + timedelta(days=3))
+        ax1.set_xlim(times[0] - timedelta(days=3), times[0] + timedelta(days=3))
 
-    # ---- 下段: 増加ビュー数の棒 ----
+    # ---- 下段: 1日ごとの増加ビュー数の棒 ----
     style_axis(ax2)
     ax2.set_title(T["daily"], loc="left", fontsize=11, color=INK_2, pad=10)
-    if deltas:
-        bar_dates = dates[1:]
+    if day_deltas:
+        # 棒はその日の正午の位置に置く(折れ線の1日分の範囲の中央に揃う)
+        bar_x = [datetime.combine(d, time_type(12)) for d in days[1:]]
         ax2.set_xlim(ax1.get_xlim())  # 上下段で期間を揃える
-        width = bar_width_days(ax2, bar_dates)
-        ax2.bar(bar_dates, deltas, width=width, color=SERIES, zorder=3)
+        width = bar_width_days(ax2, days[1:])
+        ax2.bar(bar_x, day_deltas, width=width, color=SERIES, zorder=3)
         ax2.axhline(0, color=BASELINE, linewidth=1, zorder=2)
         # 最新の棒だけ値を直接ラベル
-        latest = deltas[-1]
+        latest = day_deltas[-1]
         ax2.annotate(
             f"{latest:+,}",
-            (bar_dates[-1], max(latest, 0)),
+            (bar_x[-1], max(latest, 0)),
             textcoords="offset points",
             xytext=(0, 5),
             ha="center",
             fontsize=10,
             color=INK_2,
         )
-        if min(deltas) >= 0:
+        if min(day_deltas) >= 0:
             ax2.set_ylim(bottom=0)
     else:
         ax2.set_xlim(ax1.get_xlim())

@@ -1,4 +1,4 @@
-# note.com のアクセス数を毎日取得してグラフを更新するワークフロー
+# note.com のアクセス数を6時間ごとに取得してグラフを更新するワークフロー
 #
 # 事前準備: リポジトリの Settings → Secrets and variables → Actions に
 #           NOTE_COOKIE という名前で note.com のログイン Cookie を登録すること。
@@ -7,8 +7,9 @@ name: note アクセス数の記録
 
 on:
   schedule:
-    # 毎日 20:00 JST (= 11:00 UTC)。GitHub の混雑状況により数分〜数十分遅れることがある
-    - cron: "0 11 * * *"
+    # 6時間ごと: 2:00 / 8:00 / 14:00 / 20:00 JST (= 17:00 / 23:00 / 5:00 / 11:00 UTC)。
+    # GitHub の混雑状況により数分〜数十分遅れることがある
+    - cron: "0 5,11,17,23 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -50,7 +51,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "変更がないためコミットしません"
           else
-            git commit -m "stats: $(TZ=Asia/Tokyo date +%Y-%m-%d) のアクセス数を記録"
+            git commit -m "stats: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H時') のアクセス数を記録"
             git pull --rebase origin "${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
