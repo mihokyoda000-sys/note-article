@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, date as date_type, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -49,8 +49,8 @@ T = {
         "articles": "記事",
         "all": "全",
         "top": "上位",
-        "no_data": "まだデータがありません。\n毎日20時の自動実行(または手動実行)後にグラフが表示されます。",
-        "need_two": "推移は2日分のデータが揃うと表示されます",
+        "no_data": "まだデータがありません。\n6時間ごとの自動実行(または手動実行)後にグラフが表示されます。",
+        "need_two": "推移は2回分のデータが揃うと表示されます",
     },
     False: {
         "title": "note.com per-article views & likes",
@@ -61,8 +61,8 @@ T = {
         "articles": "articles",
         "all": "of ",
         "top": "top ",
-        "no_data": "No data yet.\nThe graph will appear after the first daily run.",
-        "need_two": "The trend appears once two days of data exist",
+        "no_data": "No data yet.\nThe graph will appear after the first run.",
+        "need_two": "The trend appears once two records exist",
     },
 }[HAS_JP_FONT]
 
@@ -81,14 +81,27 @@ def read_count_of(stat: dict) -> int:
     return 0
 
 
-def load_snapshots() -> list[tuple[date_type, dict[int, dict]]]:
-    """(日付, {記事id: 統計}) のリストを日付順に返す。壊れたファイルは読み飛ばす。"""
+def parse_stem(stem: str) -> datetime | None:
+    """ファイル名(拡張子なし)を日時にする。新形式 "2026-08-25T14" と旧形式 "2026-08-22" の両対応。"""
+    try:
+        when = datetime.fromisoformat(stem)
+    except ValueError:
+        return None
+    if "T" not in stem:
+        when = when.replace(hour=20)  # 旧形式(日付のみ)は毎日20時ごろの取得だった
+    return when
+
+
+def load_snapshots() -> list[tuple[datetime, dict[int, dict]]]:
+    """(日時, {記事id: 統計}) のリストを日時順に返す。壊れたファイルは読み飛ばす。"""
     snapshots = []
     for path in sorted(RAW_DIR.glob("*.json")) if RAW_DIR.exists() else []:
+        when = parse_stem(path.stem)
+        if when is None:
+            continue
         try:
-            day = date_type.fromisoformat(path.stem)
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (ValueError, json.JSONDecodeError):
+        except json.JSONDecodeError:
             continue
         stats = {
             s["id"]: s
@@ -96,7 +109,8 @@ def load_snapshots() -> list[tuple[date_type, dict[int, dict]]]:
             if isinstance(s, dict) and s.get("id") is not None
         }
         if stats:
-            snapshots.append((day, stats))
+            snapshots.append((when, stats))
+    snapshots.sort(key=lambda s: s[0])
     return snapshots
 
 
@@ -190,8 +204,8 @@ def render_chart(snapshots) -> None:
         render_trend(ax1, snapshots)
     else:
         style_axis(ax1)
-        day = snapshots[-1][0]
-        ax1.set_xlim(day - timedelta(days=3), day + timedelta(days=3))
+        when = snapshots[-1][0]
+        ax1.set_xlim(when - timedelta(days=3), when + timedelta(days=3))
         ax1.text(
             0.5, 0.5, T["need_two"], transform=ax1.transAxes,
             ha="center", va="center", fontsize=10, color=MUTED,
