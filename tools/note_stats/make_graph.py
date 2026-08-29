@@ -3,7 +3,8 @@
 """data/stats.csv から note のアクセス数グラフ(docs/stats.png)を生成する。
 
 上段: 全体ビューの累計の推移(折れ線。6時間ごとの全記録)
-下段: 1日ごとの増加ビュー数(棒。その日の最後の記録どうしの差)
+中段: 1日ごとの増加ビュー数(棒。その日の最後の記録どうしの差)
+下段: 6時間ごとの増加ビュー数(棒。前回の記録との差。直近7日分)
 データがまだ無い場合は案内メッセージだけの画像を出力する。
 """
 from __future__ import annotations
@@ -37,6 +38,7 @@ T = {
         "title": "note 全体ビュー(アクセス数)の推移",
         "cumulative": "累計ビュー",
         "daily": "1日ごとの増加ビュー数",
+        "recent": "6時間ごとの増加ビュー数(直近7日・前回の記録との差)",
         "updated": "最終更新",
         "total": "累計",
         "views_unit": "ビュー",
@@ -47,6 +49,7 @@ T = {
         "title": "note.com total views",
         "cumulative": "Cumulative views",
         "daily": "Daily increase in views",
+        "recent": "Increase per record (last 7 days)",
         "updated": "Updated",
         "total": "Total",
         "views_unit": "views",
@@ -98,11 +101,17 @@ def render_placeholder() -> None:
     save(fig, OUT_PATH)
 
 
-def bar_width_days(ax, dates: list[date_type]) -> float:
-    """棒の太さ(日数単位)。24px 以下・棒どうしに 2px 以上の隙間、を満たすように計算する。"""
+def bar_width_days(ax, dates) -> float:
+    """棒の太さ(日数単位)。24px 以下・棒どうしに 2px 以上の隙間、を満たすように計算する。
+
+    dates には date のリストも datetime のリストも渡せる(6時間間隔なら slot は 0.25 日)。
+    """
     slot = 1.0
     if len(dates) >= 2:
-        slot = min((b - a).days or 1 for a, b in zip(dates, dates[1:]))
+        gaps = [(b - a).total_seconds() / 86400 for a, b in zip(dates, dates[1:])]
+        gaps = [g for g in gaps if g > 0]
+        if gaps:
+            slot = min(gaps)
     ax.figure.canvas.draw()
     x0, x1 = ax.get_xlim()
     span_days = max(x1 - x0, 1e-9)
@@ -124,10 +133,11 @@ def render_chart(rows: list[dict]) -> None:
     days = sorted(last_of_day)
     day_deltas = [last_of_day[b] - last_of_day[a] for a, b in zip(days, days[1:])]
 
-    fig = new_figure()
-    gs = fig.add_gridspec(2, 1, height_ratios=[2.0, 1.1], hspace=0.42)
+    fig = new_figure(9.5)
+    gs = fig.add_gridspec(3, 1, height_ratios=[1.6, 1.0, 1.0], hspace=0.5)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
+    ax3 = fig.add_subplot(gs[2])
 
     # ---- 上段: 累計ビューの折れ線 ----
     style_axis(ax1)
@@ -203,17 +213,56 @@ def render_chart(rows: list[dict]) -> None:
         )
         ax2.set_yticks([])
 
+    # ---- 下段: 6時間ごと(記録ごと)の増加ビュー数。直近7日分 ----
+    style_axis(ax3)
+    ax3.set_title(T["recent"], loc="left", fontsize=11, color=INK_2, pad=10)
+    rec_deltas = [b - a for a, b in zip(totals, totals[1:])]
+    if rec_deltas:
+        cutoff = times[-1] - timedelta(days=7)
+        recent = [(t, d) for t, d in zip(times[1:], rec_deltas) if t >= cutoff]
+        rec_x = [p[0] for p in recent]
+        rec_y = [p[1] for p in recent]
+        ax3.set_xlim(cutoff - timedelta(hours=9), times[-1] + timedelta(hours=9))
+        width = bar_width_days(ax3, rec_x)
+        ax3.bar(rec_x, rec_y, width=width, color=SERIES, zorder=3)
+        ax3.axhline(0, color=BASELINE, linewidth=1, zorder=2)
+        # 最新の棒だけ値を直接ラベル
+        ax3.annotate(
+            f"{rec_y[-1]:+,}",
+            (rec_x[-1], max(rec_y[-1], 0)),
+            textcoords="offset points",
+            xytext=(0, 5),
+            ha="center",
+            fontsize=10,
+            color=INK_2,
+        )
+        if min(rec_y) >= 0:
+            ax3.set_ylim(bottom=0)
+    else:
+        ax3.set_xlim(ax1.get_xlim())
+        ax3.text(
+            0.5,
+            0.5,
+            T["need_two"],
+            transform=ax3.transAxes,
+            ha="center",
+            va="center",
+            fontsize=10,
+            color=MUTED,
+        )
+        ax3.set_yticks([])
+
     # ---- タイトルと更新情報 ----
-    fig.suptitle(T["title"], x=0.045, y=0.985, ha="left", fontsize=15.5, color=INK)
+    fig.suptitle(T["title"], x=0.045, y=0.99, ha="left", fontsize=15.5, color=INK)
     updated = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
     fig.text(
         0.045,
-        0.925,
+        0.948,
         f"{T['updated']}: {updated} JST   {T['total']}: {totals[-1]:,} {T['views_unit']}",
         fontsize=10,
         color=INK_2,
     )
-    fig.subplots_adjust(top=0.86, bottom=0.08, left=0.075, right=0.97)
+    fig.subplots_adjust(top=0.90, bottom=0.06, left=0.075, right=0.97)
     save(fig, OUT_PATH)
 
 
